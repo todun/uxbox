@@ -11,6 +11,7 @@
   (:require
    [app.common.data :as d]
    [app.common.spec :as us]
+   [app.config :as cfg]
    [app.main.constants :as c]
    [app.main.data.auth :as da]
    [app.main.data.dashboard :as dd]
@@ -173,19 +174,23 @@
         (mf/use-callback #(modal/show! :team-form {}))]
 
     (mf/use-effect
-     (mf/deps (:id teams))
+     (mf/deps (:id team))
      (fn []
        (->> (rp/query! :teams)
+            (rx/map #(mapv dd/assoc-team-avatar %))
             (rx/subs #(reset! teams %)))))
 
     [:div.sidebar-team-switch
      [:div.switch-content
       [:div.current-team
-       [:div.team-name
-        [:span.team-icon i/logo-icon]
-        (if (:is-default team)
-          [:span.team-text "Your penpot"]
-          [:span.team-text (:name team)])]
+       (if (:is-default team)
+         [:div.team-name
+          [:span.team-icon i/logo-icon]
+          [:span.team-text "Your penpot"]]
+         [:div.team-name
+          [:span.team-icon
+           [:img {:src (cfg/resolve-media-path (:photo team))}]]
+          [:span.team-text {:title (:name team)} (:name team)]])
        [:span.switch-icon {:on-click #(reset! show-teams-ddwn? true)}
         i/arrow-down]]
       (when-not (:is-default team)
@@ -198,16 +203,17 @@
       [:ul.dropdown.teams-dropdown
        [:li.title "Switch Team"]
        [:hr]
-       [:li.team-item {:on-click (partial on-nav (:default-team-id profile))}
-        [:span.icon i/logo-icon]
-        [:span.text "Your penpot"]]
+       [:li.team-name {:on-click (partial on-nav (:default-team-id profile))}
+        [:span.team-icon i/logo-icon]
+        [:span.team-text "Your penpot"]]
 
        (for [team (remove :is-default @teams)]
          [:* {:key (:id team)}
           [:hr]
-          [:li.team-item {:on-click (partial on-nav (:id team))}
-           [:span.icon i/logo-icon]
-           [:span.text (:name team)]]])
+          [:li.team-name {:on-click (partial on-nav (:id team))}
+           [:span.team-icon
+            [:img {:src (cfg/resolve-media-path (:photo team))}]]
+           [:span.team-text {:title (:name team)} (:name team)]]])
 
        [:hr]
        [:li.action {:on-click on-create-clicked}

@@ -14,6 +14,7 @@
    [app.util.router :as rt]
    [app.util.time :as dt]
    [app.util.timers :as ts]
+   [app.util.avatars :as avatars]
    [beicon.core :as rx]
    [cljs.spec.alpha :as s]
    [cuerdas.core :as str]
@@ -29,10 +30,12 @@
 (s/def ::created-at ::us/inst)
 (s/def ::modified-at ::us/inst)
 (s/def ::is-pinned ::us/boolean)
+(s/def ::photo ::us/string)
 
 (s/def ::team
   (s/keys :req-un [::id
                    ::name
+                   ::photo
                    ::created-at
                    ::modified-at]))
 
@@ -59,6 +62,13 @@
 
 ;; --- Fetch Team
 
+(defn assoc-team-avatar
+  [{:keys [photo name] :as team}]
+  (us/assert ::team team)
+  (cond-> team
+    (or (nil? photo) (empty? photo))
+    (assoc :photo (avatars/generate {:name name}))))
+
 (defn fetch-team
   [{:keys [id] :as params}]
   (letfn [(fetched [team state]
@@ -67,6 +77,7 @@
       ptk/WatchEvent
       (watch [_ state stream]
         (->> (rp/query :team params)
+             (rx/map assoc-team-avatar)
              (rx/map #(partial fetched %)))))))
 
 

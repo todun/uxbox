@@ -55,21 +55,6 @@
         cursor: default;
       }
 
-      &.team-item {
-        display: flex;
-
-        .icon {
-          display: flex;
-          align-items: center;
-          padding-right: 10px;
-          svg {
-            width: 20px;
-            height: 20px;
-            fill: $color-gray-60;
-          }
-        }
-      }
-
       &:hover {
         background-color: $color-primary-lighter;
       }
@@ -126,30 +111,40 @@
       padding: 0px 10px;
       display: flex;
       flex-grow: 1;
+    }
 
-      .team-name {
-        flex-grow: 1;
+    .team-name {
+      flex-grow: 1;
+      display: flex;
+      align-items: center;
+
+      .team-icon {
         display: flex;
         align-items: center;
+        padding-right: 10px;
 
-        .team-text {
-          color: $color-gray-60;
+        svg {
+          width: 23px;
+          height: 23px;
+          fill: $color-gray-60;
+        }
+
+        img {
+          border-radius: 50%;
+          flex-shrink: 0;
+          height: 23px;
+          width: 23px;
         }
       }
 
-    }
-
-    .team-icon {
-      display: flex;
-      align-items: center;
-      padding-right: 10px;
-
-      svg {
-        width: 23px;
-        height: 23px;
-        fill: $color-gray-60;
+      .team-text {
+        color: $color-gray-60;
+        @include text-ellipsis;
+        width: 100px;
       }
     }
+
+
 
     .switch-icon {
       display: flex;
