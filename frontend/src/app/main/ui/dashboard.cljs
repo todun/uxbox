@@ -20,6 +20,7 @@
    [app.main.ui.dashboard.projects :refer [projects-section]]
    [app.main.ui.dashboard.search :refer [search-page]]
    [app.main.ui.dashboard.sidebar :refer [sidebar]]
+   [app.main.ui.dashboard.team :refer [team-settings team-members]]
    [app.main.ui.icons :as i]
    [app.util.i18n :as i18n :refer [t]]
    [app.util.router :as rt]
@@ -75,6 +76,12 @@
      :dashboard-libraries
      [:& libraries-page {:team team}]
 
+     :dashboard-team-members
+     [:& team-members {:team team}]
+
+     :dashboard-team-settings
+     [:& team-settings {:team team}]
+
      nil)])
 
 (mf/defc dashboard
@@ -96,9 +103,8 @@
 
     (mf/use-effect
      (mf/deps team-id)
-     (fn []
-       (st/emit! (dd/fetch-team {:id team-id})
-                 (dd/fetch-projects {:team-id team-id}))))
+     (st/emitf (dd/fetch-team {:id team-id})
+               (dd/fetch-projects {:team-id team-id})))
 
     [:section.dashboard-layout
      [:& sidebar {:team team

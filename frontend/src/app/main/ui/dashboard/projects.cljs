@@ -28,7 +28,7 @@
 
 (mf/defc header
   {::mf/wrap [mf/memo]}
-  [{:keys [profile locale team] :as props}]
+  [{:keys [locale team] :as props}]
   (let [create #(st/emit! (dd/create-project {:team-id (:id team)}))]
     [:header.dashboard-header
      [:h1.dashboard-title "Projects"]
@@ -129,7 +129,7 @@
       [:*
        [:& header {:locale locale
                    :team team}]
-       [:section.dashboard-grid-container
+       [:section.dashboard-container
         (for [project projects]
           [:& project-item {:project project
                             :locale locale

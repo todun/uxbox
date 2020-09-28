@@ -91,12 +91,6 @@
                                 :on-key-down on-key-down
                                 :on-blur on-blur
                                 :default-value (:name project)}])])
-     #_[:ul.main-nav
-      [:li.current
-       [:a "PROJECTS"]]
-      [:li
-       [:a "MEMBERS"]]]
-
      [:a.btn-secondary.btn-small {:on-click on-create-clicked}
       (t locale "dashboard.new-file")]]))
 
@@ -119,7 +113,7 @@
 
     [:*
      [:& header {:team team :project project}]
-     [:section.dashboard-grid-container
+     [:section.dashboard-container
       [:& grid {:id (:id project)
                 :files files}]]]))
 
