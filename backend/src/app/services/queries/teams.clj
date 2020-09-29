@@ -35,7 +35,8 @@
                   (:is-admin row)
                   (:is-owner row))
       (ex/raise :type :validation
-                :code :not-authorized))))
+                :code :not-authorized))
+    row))
 
 (defn check-read-permissions!
   [conn profile-id team-id]
@@ -43,7 +44,8 @@
     ;; when row is found this means that read permission is granted.
     (when-not row
       (ex/raise :type :validation
-                :code :not-authorized))))
+                :code :not-authorized))
+    row))
 
 
 ;; --- Query: Teams

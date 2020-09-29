@@ -15,7 +15,7 @@
    [app.main.ui.dashboard.grid :refer [grid]]
    [app.main.ui.icons :as i]
    [app.main.ui.keyboard :as kbd]
-   [app.main.ui.modal :as modal]
+   [app.main.data.modal :as modal]
    [app.util.dom :as dom]
    [app.util.i18n :as i18n :refer [t]]
    [app.util.router :as rt]

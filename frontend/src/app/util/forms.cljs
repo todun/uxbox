@@ -21,20 +21,6 @@
 
 ;; --- Handlers Helpers
 
-(defn- impl-mutator
-  [v update-fn]
-  (specify v
-    IReset
-    (-reset! [_ new-value]
-      (update-fn new-value))
-
-    ISwap
-    (-swap!
-      ([self f] (update-fn f))
-      ([self f x] (update-fn #(f % x)))
-      ([self f x y] (update-fn #(f % x y)))
-      ([self f x y more] (update-fn #(apply f % x y more))))))
-
 (defn- interpret-problem
   [acc {:keys [path pred val via in] :as problem}]
   ;; (prn "interpret-problem" problem)
@@ -51,45 +37,92 @@
 
     :else acc))
 
+(declare create-form-mutator)
+
 (defn use-form
-  [& {:keys [spec validators initial]}]
-  (let [[state update-state] (mf/useState {:data (if (fn? initial) (initial) initial)
-                                           :errors {}
-                                           :touched {}})
+  [& {:keys [spec validators initial] :as opts}]
+  (let [ucounter   (mf/use-state 0)
+        state-ref  (mf/use-ref {:data (if (fn? initial) (initial) initial)
+                                :errors {}
+                                :touched {}})
+        form       (mf/use-memo #(create-form-mutator state-ref ucounter opts))]
 
-        cleaned  (s/conform spec (:data state))
-        problems (when (= ::s/invalid cleaned)
-                   (::s/problems (s/explain-data spec (:data state))))
+    (mf/use-effect
+     (mf/deps initial)
+     (fn []
+       (if (fn? initial)
+         (swap! form update :data merge (initial))
+         (swap! form update :data merge initial))))
 
-        errors   (merge (reduce interpret-problem {} problems)
-                        (reduce (fn [errors vf]
-                                  (merge errors (vf (:data state))))
-                                {} validators)
-                        (:errors state))]
-    (-> (assoc state
-               :errors errors
-               :clean-data (when (not= cleaned ::s/invalid) cleaned)
-               :valid (and (empty? errors)
-                           (not= cleaned ::s/invalid)))
-        (impl-mutator update-state))))
+    form))
+
+(defn- wrap-update-fn
+  [f ucounter {:keys [spec validators]}]
+  (fn [& args]
+    (let [state    (apply f args)
+          cleaned  (s/conform spec (:data state))
+          problems (when (= ::s/invalid cleaned)
+                     (::s/problems (s/explain-data spec (:data state))))
+
+          errors   (merge (reduce interpret-problem {} problems)
+                          (reduce (fn [errors vf]
+                                    (merge errors (vf (:data state))))
+                                  {} validators)
+                          (:errors state))]
+      (swap! ucounter inc)
+      (assoc state
+             :errors errors
+             :clean-data (when (not= cleaned ::s/invalid) cleaned)
+             :valid (and (empty? errors)
+                         (not= cleaned ::s/invalid))))))
+
+(defn- create-form-mutator
+  [state-ref ucounter opts]
+  (reify
+    IDeref
+    (-deref [_]
+      (mf/ref-val state-ref))
+
+    IReset
+    (-reset! [it new-value]
+      (mf/set-ref-val! state-ref new-value)
+      it)
+
+    ISwap
+    (-swap! [self f]
+      (let [f (wrap-update-fn f ucounter opts)]
+        (mf/set-ref-val! state-ref (f (mf/ref-val state-ref)))))
+
+    (-swap! [self f x]
+      (let [f (wrap-update-fn f ucounter opts)]
+        (mf/set-ref-val! state-ref (f (mf/ref-val state-ref) x))))
+
+    (-swap! [self f x y]
+      (let [f (wrap-update-fn f ucounter opts)]
+        (mf/set-ref-val! state-ref (f (mf/ref-val state-ref) x y))))
+
+    (-swap! [self f x y more]
+      (let [f (wrap-update-fn f ucounter opts)]
+        (mf/set-ref-val! state-ref (apply f (mf/ref-val state-ref) x y more))))))
+
 
 (defn on-input-change
-  ([{:keys [data] :as form} field]
+  ([form field]
    (on-input-change form field false))
-
-  ([{:keys [data] :as form} field trim?]
+  ([form field trim?]
   (fn [event]
     (let [target (dom/get-target event)
-          value (dom/get-value target)]
+          value  (dom/get-value target)]
       (swap! form (fn [state]
                     (-> state
                         (assoc-in [:data field] (if trim? (str/trim value) value))
                         (update :errors dissoc field))))))))
 
 (defn on-input-blur
-  [{:keys [touched] :as form} field]
+  [form field]
   (fn [event]
-    (let [target (dom/get-target event)]
+    (let [target  (dom/get-target event)
+          touched (get @form :touched)]
       (when-not (get touched field)
         (swap! form assoc-in [:touched field] true)))))
 

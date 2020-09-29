@@ -23,18 +23,18 @@
 
 (mf/defc input
   [{:keys [type label help-icon disabled name form hint trim] :as props}]
-  (let [form       (mf/use-ctx form-ctx)
+  (let [form       (or form (mf/use-ctx form-ctx))
 
         type'      (mf/use-state type)
         focus?     (mf/use-state false)
         locale     (mf/deref i18n/locale)
 
-        touched?   (get-in form [:touched name])
-        error      (get-in form [:errors name])
+        touched?   (get-in @form [:touched name])
+        error      (get-in @form [:errors name])
 
-        value      (get-in form [:data name] "")
+        value      (get-in @form [:data name] "")
 
-        help-icon' (cond 
+        help-icon' (cond
                      (and (= type "password")
                           (= @type' "password"))
                      i/eye
@@ -67,7 +67,7 @@
         on-blur
         (fn [event]
           (reset! focus? false)
-          (when-not (get-in form [:touched name])
+          (when-not (get-in @form [:touched name])
             (swap! form assoc-in [:touched name] true)))
 
         props (-> props
@@ -101,8 +101,8 @@
 (mf/defc select
   [{:keys [options label name form default]
     :or {default ""}}]
-  (let [form (mf/use-ctx form-ctx)
-        value     (get-in form [:data name] default)
+  (let [form      (or form (mf/use-ctx form-ctx))
+        value     (get-in @form [:data name] default)
         cvalue    (d/seek #(= value (:value %)) options)
         on-change (fm/on-input-change form name)]
 
@@ -122,34 +122,24 @@
 
 (mf/defc submit-button
   [{:keys [label form on-click] :as props}]
-  (let [form (mf/use-ctx form-ctx)]
+  (let [form (or form (mf/use-ctx form-ctx))]
     [:input.btn-primary.btn-large
      {:name "submit"
-      :class (when-not (:valid form) "btn-disabled")
-      :disabled (not (:valid form))
+      :class (when-not (:valid @form) "btn-disabled")
+      :disabled (not (:valid @form))
       :on-click on-click
       :value label
-      :type "submit"}]))
+      :type "button"}]))
 
 (mf/defc form
   [{:keys [on-submit spec validators initial children class] :as props}]
-  (let [frm (fm/use-form :spec spec
-                         :validators validators
-                         :initial initial)]
+  (let [form (fm/use-form :spec spec
+                          :validators validators
+                          :initial initial)]
 
-    (mf/use-effect
-     (mf/deps initial)
-     (fn []
-       (if (fn? initial)
-         (swap! frm update :data merge (initial))
-         (swap! frm update :data merge initial))))
-
-    [:& (mf/provider form-ctx) {:value frm}
+    [:& (mf/provider form-ctx) {:value form}
      [:form {:class class
              :on-submit (fn [event]
                           (dom/prevent-default event)
-                          (on-submit frm event))}
+                          (on-submit form event))}
       children]]))
-
-
-

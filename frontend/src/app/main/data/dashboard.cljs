@@ -192,6 +192,20 @@
              (rx/tap on-success)
              (rx/catch on-error))))))
 
+(defn update-team
+  [{:keys [id name] :as params}]
+  (prn "update-team" params)
+  (us/assert ::team params)
+  (ptk/reify ::update-team
+    ptk/UpdateEvent
+    (update [_ state]
+      (assoc-in state [:teams id :name] name))
+
+    ptk/WatchEvent
+    (watch [_ state stream]
+      (->> (rp/mutation! :update-team params)
+           (rx/ignore)))))
+
 (defn create-project
   [{:keys [team-id] :as params}]
   (us/assert ::us/uuid team-id)

@@ -13,6 +13,7 @@
                :clj [clojure.edn :as r])
             #?(:cljs [cljs.core :as core]
                :clj [clojure.core :as core]))
+  #?(:cljs (:require-macros [app.common.data]))
   #?(:clj
      (:import linked.set.LinkedSet)))
 

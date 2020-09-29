@@ -147,3 +147,121 @@
     }
   }
 }
+
+.dashboard-team-settings {
+
+  .team-settings {
+    display: flex;
+    justify-content: center;
+    margin-top: 16px;
+
+    svg {
+      width: 20px;
+      height: 20px;
+    }
+
+    .horizontal-blocks {
+      display: flex;
+      max-width: 1010px;
+      justify-content: space-between;
+      width: 100%;
+    }
+
+    .block {
+      display: flex;
+      max-width: 324px;
+      width: 324px;
+      height: 100px;
+      background-color: $color-white;
+      flex-direction: column;
+      padding: 12px;
+
+      .label {
+        font-size: 13px;
+      }
+    }
+
+    .info-block {
+      position: relative;
+
+      .name {
+        margin-top: 10px;
+        font-size: $fs32;
+        color: $color-black;
+        @include text-ellipsis;
+        margin-right: 90px;
+      }
+
+      .icon {
+        position: absolute;
+        padding: 15px;
+        width: 100px;
+        height: 100px;
+        right: 0px;
+        top: 0px;
+
+        img {
+          border-radius: 50%;
+          width: 70px;
+          height: 70px;
+        }
+      }
+    }
+
+    .owner-block {
+      img {
+        width: 30px;
+        height: 30px;
+        border-radius: 50%;
+      }
+
+      svg {
+        width: 12px;
+        height: 12px;
+        fill: $color-primary-dark;
+      }
+
+      .owner {
+        margin-top: 5px;
+        display: flex;
+        align-items: center;
+        color: $color-black;
+        .icon {
+          margin-right: 12px;
+        }
+      }
+
+      .summary {
+        margin-top: 5px;
+        color: $color-primary-dark;
+        .icon {
+          padding: 0px 10px;
+          margin-right: 12px;
+        }
+      }
+    }
+
+    .stats-block {
+      svg {
+        fill: $color-black;
+      }
+
+      .projects,
+      .files {
+        margin-top: 7px;
+        display: flex;
+        align-items: center;
+        color: $color-black;
+
+        .icon {
+          display: flex;
+          align-items: center;
+          padding: 0px 2px;
+          margin-right: 14px;
+        }
+      }
+
+
+    }
+  }
+}

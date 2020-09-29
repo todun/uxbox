@@ -9,14 +9,14 @@
 
 (ns app.services.mutations.teams
   (:require
-   [clojure.spec.alpha :as s]
    [app.common.exceptions :as ex]
    [app.common.spec :as us]
    [app.common.uuid :as uuid]
    [app.db :as db]
    [app.services.mutations :as sm]
+   [app.services.queries.teams :as teams]
    [app.services.mutations.projects :as projects]
-   [app.util.blob :as blob]))
+   [clojure.spec.alpha :as s]))
 
 ;; --- Helpers & Specs
 
@@ -69,3 +69,61 @@
                                             :default? true})]
     (projects/create-project-profile conn {:project-id (:id proj)
                                            :profile-id profile-id})))
+
+
+;; --- Mutation: Update Team
+
+(s/def ::update-team
+  (s/keys :req-un [::profile-id ::name ::id]))
+
+(sm/defmutation ::update-team
+  [{:keys [id name profile-id] :as params}]
+  (db/with-atomic [conn db/pool]
+    (teams/check-edition-permissions! conn profile-id id)
+    (db/update! conn :team
+                {:name name}
+                {:id id})
+    nil))
+
+
+;; --- Mutation: Leave Team
+
+(s/def ::leave-team
+  (s/keys :req-un [::profile-id ::id]))
+
+(sm/defmutation ::leave-team
+  [{:keys [id profile-id] :as params}]
+  (db/with-atomic [conn db/pool]
+    (let [perms (teams/check-read-permissions! conn profile-id id)]
+      (when (:is-owner perms)
+        (ex/raise :type :validation
+                  :code :owner-cant-leave-team
+                  :hint "reasing owner before leave"))
+
+      (db/delete! conn :team-profil-rel
+                  {:profile-id profile-id
+                   :team-id id})
+
+      nil)))
+
+
+;; --- Mutation: Delete Team
+
+(s/def ::delete-team
+  (s/keys :req-un [::profile-id ::id]))
+
+(sm/defmutation ::delete-team
+  [{:keys [id profile-id] :as params}]
+  (db/with-atomic [conn db/pool]
+    (let [perms (teams/check-edition-permissions! conn profile-id id)]
+      (when-not (:is-owner perms)
+        (ex/raise :type :validation
+                  :code :only-owner-can-delete-team))
+
+      (db/delete! conn :team
+                  {:team-id id})
+
+      nil)))
+
+
+

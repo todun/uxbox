@@ -187,3 +187,9 @@
       (ts/schedule 100 #(st/emit! (dm/show {:content "Something wrong has happened."
                                             :type :error
                                             :timeout 5000}))))))
+
+;; (defonce foo
+;;   (do
+;;     (prn "attach listener")
+;;     (.addEventListener js/window "error" (fn [err] (ptk/handle-error (unchecked-get err "error"))))
+;;     1))

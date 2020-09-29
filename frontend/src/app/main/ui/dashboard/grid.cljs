@@ -18,7 +18,7 @@
    [app.main.ui.components.context-menu :refer [context-menu]]
    [app.main.ui.icons :as i]
    [app.main.ui.keyboard :as kbd]
-   [app.main.ui.modal :as modal]
+   [app.main.data.modal :as modal]
    [app.main.worker :as wrk]
    [app.util.dom :as dom]
    [app.util.i18n :as i18n :refer [t tr]]

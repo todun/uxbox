@@ -11,13 +11,14 @@
   (:require
    [okulary.core :as l]
    [rumext.alpha :as mf]
+   [app.config :as cfg]
    [app.common.exceptions :as ex]
    [app.main.constants :as c]
    [app.main.data.dashboard :as dd]
    [app.main.refs :as refs]
    [app.main.store :as st]
    [app.main.ui.icons :as i]
-   [app.main.ui.keyboard :as kbd]
+   [app.main.ui.dashboard.team-form]
    [app.util.dom :as dom]
    [app.util.i18n :as i18n :refer [t tr]]
    [app.util.router :as rt]
@@ -27,11 +28,19 @@
 (mf/defc header
   {::mf/wrap [mf/memo]}
   [{:keys [section locale team] :as props}]
-  (let [go-members (mf/use-callback (mf/deps team) (st/emitf (rt/nav :dashboard-team-members {:team-id (:id team)})))
-        go-settings (mf/use-callback (mf/deps team) (st/emitf (rt/nav :dashboard-team-settings {:team-id (:id team)})))
+  (let [go-members
+        (mf/use-callback
+         (mf/deps team)
+         (st/emitf (rt/nav :dashboard-team-members {:team-id (:id team)})))
+
+        go-settings
+        (mf/use-callback
+         (mf/deps team)
+         (st/emitf (rt/nav :dashboard-team-settings {:team-id (:id team)})))
 
         members-section?  (= section :dashboard-team-members)
         settings-section? (= section :dashboard-team-settings)]
+
     [:header.dashboard-header
      [:h1.dashboard-title "Projects"]
      [:nav
@@ -40,8 +49,11 @@
         [:a {:on-click go-members} "MEMBERS"]]
        [:li {:class (when settings-section? "active")}
         [:a {:on-click go-settings} "SETTINGS"]]]]
-     [:a.btn-secondary.btn-small
-      (t locale "dashboard.header.new-project")]]))
+
+     (if members-section?
+       [:a.btn-secondary.btn-small
+        (t locale "dashboard.header.invite-profile")]
+       [:div])]))
 
 (mf/defc team-members
   [{:keys [team] :as props}]
@@ -75,4 +87,29 @@
      [:& header {:locale locale
                  :section :dashboard-team-settings
                  :team team}]
-     [:section.dashboard-container.dashboard-team-settings]]))
+     [:section.dashboard-container.dashboard-team-settings
+      [:div.team-settings
+       [:div.horizontal-blocks
+        [:div.block.info-block
+         [:div.label "Team info"]
+         [:div.name (:name team)]
+         [:div.icon
+          [:img {:src (cfg/resolve-media-path (:photo team))}]]]
+
+        [:div.block.owner-block
+         [:div.label "Team members"]
+         [:div.owner
+          [:span.icon [:img {:src (cfg/resolve-media-path (:photo team))}]]
+          [:span.text "Juan de la Cruz (Owner)"]]
+         [:div.summary
+          [:span.icon i/user]
+          [:span.text "5 members"]]]
+
+        [:div.block.stats-block
+         [:div.label "Team projects"]
+         [:div.projects
+          [:span.icon i/folder]
+          [:span.text "4 projects"]]
+         [:div.files
+          [:span.icon i/file-html]
+          [:span.text "4 files"]]]]]]]))

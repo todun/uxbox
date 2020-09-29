@@ -16,7 +16,7 @@
    [app.main.store :as st]
    [app.main.ui.icons :as i]
    [app.main.ui.messages :as msgs]
-   [app.main.ui.modal :as modal]
+   [app.main.data.modal :as modal]
    [app.util.i18n :as i18n :refer [tr t]]))
 
 (mf/defc delete-account-modal

@@ -28,7 +28,7 @@
    [app.main.ui.components.tab-container :refer [tab-container tab-element]]
    [app.main.ui.icons :as i]
    [app.main.ui.keyboard :as kbd]
-   [app.main.ui.modal :as modal]
+   [app.main.data.modal :as modal]
    [app.main.ui.shapes.icon :as icon]
    [app.util.data :refer [matches-search]]
    [app.util.dom :as dom]

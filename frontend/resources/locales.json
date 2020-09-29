@@ -392,6 +392,8 @@
       "es" : "Renombrar"
     }
   },
+  "dashboard.header.invite-profile": "Invite to team",
+
   "dashboard.header.draft" : {
     "used-in" : [ "src/app/main/ui/dashboard/project.cljs:54" ],
     "translations" : {
@@ -572,6 +574,16 @@
       "es" : "Escribe algo para buscar"
     }
   },
+
+  "dashboard.sidebar.team-members": "Members",
+  "dashboard.sidebar.team-settins": "Settings",
+  "dashboard.sidebar.rename-team": "Rename",
+  "dashboard.sidebar.switch-team": "Switch Team",
+  "dashboard.sidebar.leave-team": "Leave team",
+  "dashboard.sidebar.delete-team": "Delete team",
+  "dashboard.sidebar.default-team-name": "Your penpot",
+  "dashboard.sidebar.no-projects-placeholder": "Pinned projects will appear here",
+
   "dashboard.sidebar.drafts" : {
     "used-in" : [ "src/app/main/ui/dashboard/sidebar.cljs:127" ],
     "translations" : {
