@@ -19,6 +19,7 @@
    [app.config :as cfg]
    [app.main.data.workspace :as dw]
    [app.main.data.workspace.libraries :as dwl]
+   [app.main.data.workspace.texts :as dwt]
    [app.main.data.colors :as dc]
    [app.main.refs :as refs]
    [app.main.store :as st]
@@ -26,6 +27,7 @@
    [app.main.ui.components.context-menu :refer [context-menu]]
    [app.main.ui.components.file-uploader :refer [file-uploader]]
    [app.main.ui.components.tab-container :refer [tab-container tab-element]]
+   [app.main.ui.workspace.sidebar.options.typography :refer [typography-entry]]
    [app.main.ui.icons :as i]
    [app.main.ui.keyboard :as kbd]
    [app.main.ui.modal :as modal]
@@ -41,7 +43,7 @@
    [rumext.alpha :as mf]))
 
 (mf/defc components-box
-  [{:keys [file-id local? components] :as props}]
+  [{:keys [file-id local? components open? on-open on-close] :as props}]
   (let [state (mf/use-state {:menu-open false
                              :top nil
                              :left nil
@@ -75,27 +77,28 @@
            (dnd/set-allowed-effect! event "move")))]
 
     [:div.asset-group
-     [:div.group-title
-      (tr "workspace.assets.components")
+     [:div.group-title {:class (when (not open?) "closed")}
+      [:span {:on-click #(if open? (on-close) (on-open))} i/arrow-slide (tr "workspace.assets.components")]
       [:span (str "\u00A0(") (count components) ")"]] ;; Unicode 00A0 is non-breaking space
-     [:div.group-grid.big
-      (for [component components]
-        [:div.grid-cell {:key (:id component)
-                         :draggable true
-                         :on-context-menu (on-context-menu (:id component))
-                         :on-drag-start (partial on-drag-start (:id component))}
-         [:& exports/component-svg {:group (get-in component [:objects (:id component)])
-                                    :objects (:objects component)}]
-         [:div.cell-name (:name component)]])
+     (when open?
+       [:div.group-grid.big
+        (for [component components]
+          [:div.grid-cell {:key (:id component)
+                           :draggable true
+                           :on-context-menu (on-context-menu (:id component))
+                           :on-drag-start (partial on-drag-start (:id component))}
+           [:& exports/component-svg {:group (get-in component [:objects (:id component)])
+                                      :objects (:objects component)}]
+           [:div.cell-name (:name component)]])
 
-      (when local?
-        [:& context-menu
-         {:selectable false
-          :show (:menu-open @state)
-          :on-close #(swap! state assoc :menu-open false)
-          :top (:top @state)
-          :left (:left @state)
-          :options [[(tr "workspace.assets.delete") on-delete]]}])]]))
+        (when local?
+          [:& context-menu
+           {:selectable false
+            :show (:menu-open @state)
+            :on-close #(swap! state assoc :menu-open false)
+            :top (:top @state)
+            :left (:left @state)
+            :options [[(tr "workspace.assets.delete") on-delete]]}])])]))
 
 (mf/defc graphics-box
   [{:keys [file-id local? objects open? on-open on-close] :as props}]
@@ -326,6 +329,42 @@
                           :local? local?
                           :locale locale}])])]))
 
+(mf/defc typography-box
+  [{:keys [file-id local? typographies locale open? on-open on-close] :as props}]
+
+  (let [add-typography
+        (mf/use-callback
+         (mf/deps file-id)
+         (fn [value opacity]
+           (st/emit! (dwl/add-typography dwl/default-typography))))
+
+        handle-change
+        (mf/use-callback
+         (mf/deps file-id)
+         (fn [typography changes]
+           (st/emit! (dwl/update-typography (merge typography changes)))))
+
+        closed-typography-edit
+        (mf/use-callback
+         (mf/deps file-id)
+         (fn [event] ))]
+
+    [:div.asset-group
+     [:div.group-title {:class (when (not open?) "closed")}
+      [:span {:on-click #(if open? (on-close) (on-open))} i/arrow-slide "Typography" #_(t locale "workspace.assets.typography")]
+      [:span.num-assets (str "\u00A0(") (count typographies) ")"] ;; Unicode 00A0 is non-breaking space
+      (when local?
+        [:div.group-button {:on-click add-typography} i/plus])]
+
+     (when open?
+       [:div.group-list
+        (for [typography typographies]
+          [:& typography-entry
+           {:key (:id typography)
+            :typography (-> typography
+                            (assoc :file-id (when-not local? file-id)))
+            :on-change #(handle-change typography %)}])])]))
+
 (defn file-colors-ref
   [id]
   (l/derived (fn [state]
@@ -354,6 +393,15 @@
                    (vals (get-in state [:workspace-libraries id :data :components])))))
              st/state =))
 
+(defn file-typography-ref
+  [id]
+  (l/derived (fn [state]
+               (let [wfile (:workspace-file state)]
+                 (if (= (:id wfile) id)
+                   (vals (get-in wfile [:data :typography]))
+                   (vals (get-in state [:workspace-libraries id :data :typography])))))
+             st/state =))
+
 (defn apply-filters
   [coll filters]
   (->> coll
@@ -369,7 +417,10 @@
         router         (mf/deref refs/router)
         toggle-open    #(swap! open? not)
 
-        toggles        (mf/use-state #{:graphics :colors})
+        toggles        (mf/use-state #{:components
+                                       :graphics
+                                       :colors
+                                       :typography})
 
         url            (rt/resolve router :workspace
                                    {:project-id (:project-id file)
@@ -378,6 +429,9 @@
 
         colors-ref     (mf/use-memo (mf/deps (:id file)) #(file-colors-ref (:id file)))
         colors         (apply-filters (mf/deref colors-ref) filters)
+
+        typography-ref (mf/use-memo (mf/deps (:id file)) #(file-typography-ref (:id file)))
+        typographies (apply-filters (mf/deref typography-ref) filters)
 
         media-ref      (mf/use-memo (mf/deps (:id file)) #(file-media-ref (:id file)))
         media          (apply-filters (mf/deref media-ref) filters)
@@ -414,12 +468,19 @@
              show-colors?       (and (or (= (:box filters) :all)
                                          (= (:box filters) :colors))
                                      (or (> (count colors) 0)
+                                         (str/empty? (:term filters))))
+             show-typography?   (and (or (= (:box filters) :all)
+                                         (= (:box filters) :typography))
+                                     (or (> (count colors) 0)
                                          (str/empty? (:term filters))))]
          [:div.tool-window-content
           (when show-components?
             [:& components-box {:file-id (:id file)
                                 :local? local?
-                                :components components}])
+                                :components components
+                                :open? (contains? @toggles :components)
+                                :on-open #(swap! toggles conj :components)
+                                :on-close #(swap! toggles disj :components)}])
           (when show-graphics?
             [:& graphics-box {:file-id (:id file)
                               :local? local?
@@ -435,6 +496,15 @@
                             :open? (contains? @toggles :colors)
                             :on-open #(swap! toggles conj :colors)
                             :on-close #(swap! toggles disj :colors)}])
+
+          (when show-typography?
+            [:& typography-box {:file-id (:id file)
+                                :local? local?
+                                :locale locale
+                                :typographies typographies
+                                :open? (contains? @toggles :typography)
+                                :on-open #(swap! toggles conj :typography)
+                                :on-close #(swap! toggles disj :typography)}])
 
           (when (and (not show-components?) (not show-graphics?) (not show-colors?))
             [:div.asset-group
@@ -495,8 +565,10 @@
         [:select.input-select {:value (:box @filters)
                                :on-change on-box-filter-change}
          [:option {:value ":all"} (t locale "workspace.assets.box-filter-all")]
-         [:option {:value ":graphics"} (t locale "workspace.assets.box-filter-graphics")]
-         [:option {:value ":colors"} (t locale "workspace.assets.box-filter-colors")]]]]
+         [:option {:value ":components"} (t locale "workspace.assets.components")]
+         [:option {:value ":graphics"} (t locale "workspace.assets.graphics")]
+         [:option {:value ":colors"} (t locale "workspace.assets.colors")]
+         [:option {:value ":typography"} (t locale "workspace.assets.typography")]]]]
 
      [:div.libraries-wrapper
       [:& file-library

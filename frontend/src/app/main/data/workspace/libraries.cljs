@@ -522,3 +522,56 @@
                   {:label (tr "workspace.updates.dismiss")
                    :callback do-dismiss}]))))))
 
+
+(def default-typography
+  {:name "Source Sans Pro Regular"
+   :font-id "sourcesanspro"
+   :font-family "sourcesanspro"
+   :font-variant-id "regular"
+   :font-size "14"
+   :font-weight "400"
+   :font-style "normal"
+   :line-height "1.2"
+   :letter-spacing "0"
+   :text-transform "none"})
+
+(defn add-typography
+  [typography]
+  (let [typography (update typography :id #(or % (uuid/next)))]
+    (us/assert ::cp/typography typography)
+    (ptk/reify ::add-typography
+      ptk/WatchEvent
+      (watch [_ state s]
+        (let [rchg {:type :add-typography
+                    :typography typography}
+              uchg {:type :del-typography
+                    :id (:id typography)}]
+          (rx/of (dwc/commit-changes [rchg] [uchg] {:commit-local? true})))))))
+
+(defn update-typography
+  [typography]
+  (us/assert ::cp/typography typography)
+
+  (ptk/reify ::update-typography
+    ptk/WatchEvent
+    (watch [_ state stream]
+      (let [prev (get-in state [:workspace-data :typography (:id typography)])
+            rchg {:type :mod-typography
+                  :typography typography}
+            uchg {:type :mod-typography
+                  :typography prev}]
+        (rx/of (dwc/commit-changes [rchg] [uchg] {:commit-local? true})
+               (sync-file nil))))))
+
+(defn delete-typography
+  [{:keys [id] :as params}]
+  (us/assert ::us/uuid id)
+  (ptk/reify ::delete-typography
+    ptk/WatchEvent
+    (watch [_ state stream]
+      (let [prev (get-in state [:workspace-data :typography id])
+            rchg {:type :del-typography
+                  :id id}
+            uchg {:type :add-typography
+                  :color prev}]
+        (rx/of (dwc/commit-changes [rchg] [uchg] {:commit-local? true}))))))
